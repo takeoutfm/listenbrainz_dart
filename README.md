@@ -17,10 +17,6 @@ final client = ListenBrainz('insert-token-here');
 client.submitSingle(Track(title: 'Cars', artist: 'Gary Numan'), DateTime.now());
 ```
 
-```dart
-const like = 'sample';
-```
-
 ## Additional information
 
 See github.com/takeoutfm.
