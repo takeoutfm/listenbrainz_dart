@@ -18,4 +18,25 @@
 import 'package:listenbrainz_dart/listenbrainz_dart.dart';
 
 void main() {
+  // create client with your authentication token
+  final token = 'insert-your-listenbrainz-token-here';
+  final client = ListenBrainz(token);
+
+  // submit playing_now
+  client.submitPlayingNow(Track(
+    title: 'song title',
+    artist: 'song artist',
+    release: 'song release (optional)',
+  ));
+
+  // submit single listen
+  final listenedAt = DateTime.now();
+  client.submitSingle(
+    Track(
+      title: 'song title',
+      artist: 'song artist',
+      release: 'song release (optional)',
+    ),
+    listenedAt,
+  );
 }

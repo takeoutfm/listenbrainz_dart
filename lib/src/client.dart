@@ -37,16 +37,19 @@ class _ClientWithHeaders extends http.BaseClient {
 }
 
 class ListenBrainz {
+  static const maxListensPerRequest = 1000;
   static const maxItemsPerGet = 100;
   static const defaultItemsPerGet = 25;
 
   final String _token;
-  final String endpoint;
+  final String server;
   final String? userAgent;
 
-  ListenBrainz(String token, {String? endpoint, this.userAgent})
+  /// Creates a ListenBrainz client with authentication token and optional
+  /// server and user-agent.
+  ListenBrainz(String token, {String? server, this.userAgent})
       : _token = token,
-        endpoint = endpoint ?? 'https://api.listenbrainz.org';
+        server = server ?? 'https://api.listenbrainz.org';
 
   http.Client _client() {
     final ua = userAgent;
@@ -61,13 +64,13 @@ class ListenBrainz {
   Future<http.Response> _submit(Map<String, dynamic> json) async {
     assert(json.isNotEmpty);
     assert(_token.isNotEmpty);
-    final url = Uri.parse('$endpoint/1/submit-listens');
+    final url = Uri.parse('$server/1/submit-listens');
     return _client().post(url, body: jsonEncode(json));
   }
 
   Future<TokenResult> _validate() async {
     assert(_token.isNotEmpty);
-    final url = Uri.parse('$endpoint/1/validate-token');
+    final url = Uri.parse('$server/1/validate-token');
     final resp = await _client().get(url);
     final json =
         jsonDecode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
@@ -96,25 +99,34 @@ class ListenBrainz {
     if (params.isNotEmpty) {
       queryString = '?${params.join('&')}';
     }
-    final url = Uri.parse('$endpoint/1/user/$userId/listens$queryString');
-    print(url);
+    final url = Uri.parse('$server/1/user/$userId/listens$queryString');
     final resp = await _client().get(url);
     final json =
         jsonDecode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
     return Listens.fromJson(json);
   }
 
+  /// Submits a single playing_now track.
   Future<http.Response> submitPlayingNow(Track track) async =>
       submit(Submission.playingNow(track));
 
+  /// Submits a single track with timestamp.
+  /// Note: ListenBrainz consideres a track to be listened to if it's been
+  /// played halfway or for 4 minutes.
   Future<http.Response> submitSingle(Track track, DateTime listenedAt) async =>
       submit(Submission.single(track, listenedAt));
 
-  Future<http.Response> submit(Submission submission) async =>
-      _submit(submission.toJson());
+  /// Submits submission payload.
+  Future<http.Response> submit(Submission submission) async {
+    assert(submission.payloads.length <= maxItemsPerGet);
+    return _submit(submission.toJson());
+  }
 
+  /// Validates the ListenBrainz authentication token.
   Future<TokenResult> validate() async => _validate();
 
+  /// Gets the listens for the provided ListenBrainz user. Optional parameters
+  /// for min/max time range (Unix epoch time) and result count.
   Future<List<Listen>> listens(String userId,
       {int? min, int? max, int? count}) async {
     final listens = await _listens(userId, min: min, max: max, count: count);

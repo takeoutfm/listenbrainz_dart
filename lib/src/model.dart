@@ -19,21 +19,27 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'model.g.dart';
 
+/// Submission to ListenBrainz with one or more listens.
 @JsonSerializable()
 class Submission {
   static const typePlayingNow = 'playing_now';
   static const typeSingle = 'single';
 
+  /// Type of listen. Should be `playing_now` or `single`.
   @JsonKey(name: 'listen_type')
   final String listenType;
+
+  /// Submission payload entries.
   @JsonKey(name: 'payload')
   final List<Payload> payloads;
 
   Submission(this.listenType, this.payloads);
 
+  /// Creates a playing_now submission.
   factory Submission.playingNow(Track track) =>
       Submission(typePlayingNow, [Payload(track)]);
 
+  /// Creates a single track submission with timestamp.
   factory Submission.single(Track track, DateTime listenedAt) =>
       Submission(typeSingle, [Payload(track, listenedAt)]);
 
@@ -43,10 +49,15 @@ class Submission {
   Map<String, dynamic> toJson() => _$SubmissionToJson(this);
 }
 
+/// Payload for ListenBrainz submission.
 @JsonSerializable(includeIfNull: false)
 class Payload {
+  /// Listen timestamp stored in Unix epoch time. playing_now does not have
+  /// a timestamp.
   @JsonKey(name: 'listened_at')
   final int? listenedAt; // unix time
+
+  /// Listen track metadata.
   @JsonKey(name: 'track_metadata')
   final Track track;
 
@@ -55,15 +66,14 @@ class Payload {
             ? listenedAt.millisecondsSinceEpoch ~/ 1000
             : null;
 
-  // DateTime get listenedTime =>
-  //     DateTime.fromMicrosecondsSinceEpoch(listenedAt * 1000);
-
   factory Payload.fromJson(Map<String, dynamic> json) =>
       _$PayloadFromJson(json);
 
   Map<String, dynamic> toJson() => _$PayloadToJson(this);
 }
 
+/// Optional additional information that may be included with a submission.
+/// See ListenBrainz API documentation for further information.
 @JsonSerializable(includeIfNull: false)
 class AdditionalInfo {
   @JsonKey(name: "artist_mbids")
@@ -133,15 +143,22 @@ class AdditionalInfo {
   Map<String, dynamic> toJson() => _$AdditionalInfoToJson(this);
 }
 
-// track_metadata
+/// Track metadata.
 @JsonSerializable(includeIfNull: false)
 class Track {
+  /// Track name/title.
   @JsonKey(name: 'track_name')
   final String title;
+
+  /// Track artist name.
   @JsonKey(name: 'artist_name')
   final String artist;
+
+  /// Optional track release name/title.
   @JsonKey(name: 'release_name')
   final String? release;
+
+  /// Optional track additional information.
   @JsonKey(name: "additional_info")
   final AdditionalInfo? additionalInfo;
 
@@ -157,6 +174,7 @@ class Track {
   Map<String, dynamic> toJson() => _$TrackToJson(this);
 }
 
+/// Token valdation result.
 @JsonSerializable(includeIfNull: false)
 class TokenResult {
   @JsonKey(name: 'code')
@@ -176,6 +194,7 @@ class TokenResult {
   Map<String, dynamic> toJson() => _$TokenResultToJson(this);
 }
 
+/// Artist credit.
 @JsonSerializable(includeIfNull: false)
 class ArtistCredit {
   @JsonKey(name: "artist_credit_name")
@@ -197,6 +216,7 @@ class ArtistCredit {
   Map<String, dynamic> toJson() => _$ArtistCreditToJson(this);
 }
 
+/// MusicBrainz mapping associated with a returned listen.
 @JsonSerializable(includeIfNull: false)
 class MbidMapping {
   @JsonKey(name: "artist_mbids")
@@ -236,6 +256,7 @@ class MbidMapping {
   Map<String, dynamic> toJson() => _$MbidMappingToJson(this);
 }
 
+/// Additional listen information.
 @JsonSerializable(includeIfNull: false)
 class ListenAdditionalInfo {
   @JsonKey(name: "recording_msid")
@@ -249,16 +270,26 @@ class ListenAdditionalInfo {
   Map<String, dynamic> toJson() => _$ListenAdditionalInfoToJson(this);
 }
 
+/// Listened track from user listens.
 @JsonSerializable(includeIfNull: false)
 class ListenedTrack {
+  /// Track artist name.
   @JsonKey(name: "artist_name")
   String artist;
+
+  /// Optional track release name/title.
   @JsonKey(name: "release_name")
   String? release;
+
+  /// Track name/title.
   @JsonKey(name: "track_name")
   String title;
+
+  /// Optional MusicBrainz mapping.
   @JsonKey(name: "mbid_mapping")
   MbidMapping? mbidMapping;
+
+  /// Optional additional information.
   @JsonKey(name: "additional_info")
   ListenAdditionalInfo? additionalInfo;
 
@@ -276,6 +307,7 @@ class ListenedTrack {
   Map<String, dynamic> toJson() => _$ListenedTrackToJson(this);
 }
 
+/// A recorded listen.
 @JsonSerializable(includeIfNull: false)
 class Listen {
   @JsonKey(name: "listened_at")
@@ -297,6 +329,7 @@ class Listen {
     required this.userId,
   });
 
+  /// Gets the listen time as a [DateTime].
   DateTime get time => DateTime.fromMillisecondsSinceEpoch(listenedAt * 1000);
 
   factory Listen.fromJson(Map<String, dynamic> json) => _$ListenFromJson(json);
@@ -304,14 +337,22 @@ class Listen {
   Map<String, dynamic> toJson() => _$ListenToJson(this);
 }
 
+/// Payload for users listens.
 @JsonSerializable(includeIfNull: false)
 class ListensPayload {
+  /// The number of listens.
   @JsonKey(name: "count")
   final int count;
+
+  /// Latest listen timestamp.
   @JsonKey(name: "latest_listen_ts")
   final int? latestListenTs;
+
+  /// ListenBrainz user.
   @JsonKey(name: "user_id")
   final String userId;
+
+  /// User listens.
   @JsonKey(name: "listens")
   final List<Listen> listens;
 
@@ -328,6 +369,7 @@ class ListensPayload {
   Map<String, dynamic> toJson() => _$ListensPayloadToJson(this);
 }
 
+/// ListenBrainz listens response with payload.
 @JsonSerializable()
 class Listens {
   @JsonKey(name: "payload")
