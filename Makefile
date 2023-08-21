@@ -15,5 +15,11 @@ generate:
 test:
 	${DART} test
 
+check:
+	${DART} analyze
+
+publish:
+	${DART} pub publish
+
 clean:
 	${DART} clean
