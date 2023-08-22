@@ -66,5 +66,16 @@ void main() {
         expect(l.track.title.isNotEmpty, true);
       }
     });
+
+    // test('submit', () async {
+    //   final client = ListenBrainz('');
+    //   final track = Track(
+    //     title: 'Cars',
+    //     artist: 'Gary Numan',
+    //     release: 'The Pleasure Principle',
+    //   );
+    //   final result = await client.submitPlayingNow(track);
+    //   expect(result.statusCode, 200);
+    // });
   });
 }

@@ -15,26 +15,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with listenbrainz_dart. If not, see <https://www.gnu.org/licenses/>.
 
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart';
 
 import 'dart:convert';
 import 'dart:io';
 import 'model.dart';
-
-class _ClientWithHeaders extends http.BaseClient {
-  final http.Client _client;
-  final Map<String, String> _headers;
-
-  _ClientWithHeaders(this._client, this._headers);
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    for (var e in _headers.entries) {
-      request.headers[e.key] = e.value;
-    }
-    return _client.send(request);
-  }
-}
 
 class ListenBrainz {
   static const maxListensPerRequest = 1000;
@@ -44,34 +29,36 @@ class ListenBrainz {
   final String _token;
   final String server;
   final String? userAgent;
+  final Client? client;
 
   /// Creates a ListenBrainz client with authentication token and optional
   /// server and user-agent.
-  ListenBrainz(String token, {String? server, this.userAgent})
+  ListenBrainz(String token, {String? server, this.client, this.userAgent})
       : _token = token,
         server = server ?? 'https://api.listenbrainz.org';
 
-  http.Client _client() {
+  Client _client() => client ?? Client();
+
+  Map<String, String> _headers() {
     final ua = userAgent;
-    final client = _ClientWithHeaders(http.Client(), {
+    return {
       if (ua != null) HttpHeaders.userAgentHeader: ua,
       HttpHeaders.contentTypeHeader: 'application/json',
       HttpHeaders.authorizationHeader: 'Token $_token',
-    });
-    return client;
+    };
   }
 
-  Future<http.Response> _submit(Map<String, dynamic> json) async {
+  Future<Response> _submit(Map<String, dynamic> json) async {
     assert(json.isNotEmpty);
     assert(_token.isNotEmpty);
     final url = Uri.parse('$server/1/submit-listens');
-    return _client().post(url, body: jsonEncode(json));
+    return _client().post(url, body: jsonEncode(json), headers: _headers());
   }
 
   Future<TokenResult> _validate() async {
     assert(_token.isNotEmpty);
     final url = Uri.parse('$server/1/validate-token');
-    final resp = await _client().get(url);
+    final resp = await _client().get(url, headers: _headers());
     final json =
         jsonDecode(utf8.decode(resp.bodyBytes)) as Map<String, dynamic>;
     return TokenResult.fromJson(json);
@@ -107,17 +94,17 @@ class ListenBrainz {
   }
 
   /// Submits a single playing_now track.
-  Future<http.Response> submitPlayingNow(Track track) async =>
+  Future<Response> submitPlayingNow(Track track) async =>
       submit(Submission.playingNow(track));
 
   /// Submits a single track with timestamp.
   /// Note: ListenBrainz consideres a track to be listened to if it's been
   /// played halfway or for 4 minutes.
-  Future<http.Response> submitSingle(Track track, DateTime listenedAt) async =>
+  Future<Response> submitSingle(Track track, DateTime listenedAt) async =>
       submit(Submission.single(track, listenedAt));
 
   /// Submits submission payload.
-  Future<http.Response> submit(Submission submission) async {
+  Future<Response> submit(Submission submission) async {
     assert(submission.payloads.length <= maxItemsPerGet);
     return _submit(submission.toJson());
   }

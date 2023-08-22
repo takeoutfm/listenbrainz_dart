@@ -16,7 +16,9 @@ test:
 	${DART} test
 
 check:
+	${DART} pub get
 	${DART} analyze
+	${DART} pub publish --dry-run
 
 publish:
 	${DART} pub publish
